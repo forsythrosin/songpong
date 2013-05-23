@@ -129,3 +129,16 @@ SP.Board.prototype.globalValues = function(paddles) {
 	}
 	return gv;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+

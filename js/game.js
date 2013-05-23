@@ -1,9 +1,3 @@
-(function() {
-  var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-  window.requestAnimationFrame = requestAnimationFrame;
-})();
-
 SP = {};
 
 SP.Game = function(options) {
@@ -16,20 +10,11 @@ SP.Game = function(options) {
 	this.canvas = this.board.getCanvas();
 	this.started = false;
 	
-	var colors = ["#c3ef77", "#ef7777", "green", "yellow"];
-	
 	this.paddles = [];
 	this.points = [];
-	this.pointHolders = [];
-	var ph = $('<div id="pointHolder">').css("width", options.numberOfPlayers * 100);
-	$("body").append(ph);
 	for (var i = 0; i < options.numberOfPlayers; ++i) {
-		this.paddles.push(new SP.Paddle(options.paddleSize, colors[i]));
+		this.paddles.push(new SP.Paddle(options.paddleSize));
 		this.points.push(0);
-		var holder = $('<div class="points">');
-		holder.css("color", colors[i]).text(0);
-		this.pointHolders.push(holder);
-		ph.append(holder);
 	}
 	this.ball = new SP.Ball(options.ballSize);
 	this.ball.start([Math.random() > 1 ? 1 : -1, Math.random() > 1 ? 1 : -1]);
@@ -140,7 +125,7 @@ SP.Game.prototype.render = function() {
 	this.board.circle(this.ball.position(), this.ball.radius());
 	var gv = this.board.globalValues(this.paddles);
 	for (var i = 0, size = gv.length; i < size; ++i) {
-		this.board.rectangle(gv[i].pos, gv[i].size, this.paddles[i].color());
+		this.board.rectangle(gv[i].pos, gv[i].size);
 	}
 };
 
@@ -226,7 +211,7 @@ SP.Game.prototype.intersectCircle = function(position, radius, line) {
 };
 
 SP.Game.prototype.point = function(id) {
-	this.pointHolders[id].text(++this.points[id]);
+	this.points[id]++;
 };
 
 SP.Game.prototype.moveUp = function() {

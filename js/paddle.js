@@ -1,9 +1,8 @@
-SP.Paddle = function(size, color) {
+SP.Paddle = function(size) {
 	this.s = size || [100, 20];
 	this.pos = 0.5;
 	this.speed = 0.0005;
 	this.v = 0;
-	this.c = color;
 };
 
 SP.Paddle.prototype.moveTo = function(goal) {
@@ -33,10 +32,6 @@ SP.Paddle.prototype.position = function() {
 SP.Paddle.prototype.size = function() {
 	return this.s;
 };
-
-SP.Paddle.prototype.color = function() {
-	return this.c;
-}
 
 SP.Paddle.prototype.move = function(t) {
 	if (this.goal) {

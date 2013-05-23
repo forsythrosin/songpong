@@ -54,7 +54,7 @@ SP.Analyser.prototype.getHPSpectrum = function () {
 
     
     for (var j = 0; j < m; j++) {
-        accumulator[j] = 1 + j/20;
+        accumulator[j] = 1 + j/10;
     }
 
     for (var i = 1; i < this.iterations; i++) {
@@ -82,8 +82,8 @@ SP.Analyser.prototype.getAction = function(spectrum) {
     avg /= m;
     
 
-    if (spectrum[max] - avg > 50) {
-        if (max > 15) {
+    if (spectrum[max] - avg > 50 && spectrum[max] > 100) {
+        if (max > 10) {
 	    return 'up';
         } else {
             return 'down';
@@ -103,9 +103,9 @@ SP.Analyser.prototype.initializeMicrophone = function (stream) {
 
 SP.Analyser.prototype.mainLoop = function () {
     var spectrum = this.getHPSpectrum();
-//    game.updateFrequencySpectrum(spectrum);
     var action = this.getAction(spectrum);
     var game = this.game;
+    game.updateFrequencySpectrum(spectrum.slice(0,spectrum.length/8));
     switch (action) {
     case 'up':
         game.moveUp();
