@@ -1,4 +1,36 @@
-function getAudioContext() {
+SP.Analyser = function(game) {
+    this.game = game;
+
+    var ac = this.ac = this.getAudioContext();
+    this.analyserNode = ac.createAnalyser();
+
+    this.analyserInput = ac.createGainNode();
+
+    var lp = ac.createBiquadFilter();
+    var hp = ac.createBiquadFilter();
+
+
+    lp.type = lp.LOWPASS;
+    hp.type = hp.HIGHPASS;
+    
+    lp.frequency.value = 2000;
+    hp.frequency.value = 100;
+    lp.connect(hp);
+
+    hp.connect(this.analyserNode);
+    this.analyserInput.connect(lp);
+    this.iterations = 5;
+    
+    this.freqData = new Uint8Array(this.analyserNode.frequencyBinCount);
+    
+    navigator.getUserMedia({audio: true},
+                           this.initializeMicrophone.bind(this),
+                           function(err) { console.log(err); });
+
+};
+
+
+SP.Analyser.prototype.getAudioContext = function () {
     var vendors = ['', 'ms', 'moz', 'webkit', 'o'];
     for(var x = 0; x < vendors.length && (!window.AudioContext || !navigator.getUserMedia); ++x) {
         window.AudioContext = window[vendors[x]+'AudioContext'];
@@ -9,15 +41,13 @@ function getAudioContext() {
     } else {
         return new AudioContext();
     }
-}
+};
 
+SP.Analyser.prototype.getHPSpectrum = function () {
+    this.analyserNode.getByteFrequencyData(this.freqData);
+    var n = this.freqData.length;
 
-function getCurrentFrequency() {
-
-    analyser.getByteFrequencyData(freqData);
-    var n = freqData.length;
-    var iterations = 5;
-    var m = Math.floor(n/iterations);
+    var m = Math.floor(n/this.iterations);
 
     var plotData = new Array(n);
     var accumulator = new Array(m);
@@ -27,109 +57,69 @@ function getCurrentFrequency() {
         accumulator[j] = 1 + j/20;
     }
 
-    for (var i = 1; i < iterations; i++) {
+    for (var i = 1; i < this.iterations; i++) {
         for (var j = 0; j < m; j++) {
-            accumulator[j] *= freqData[j*i] / 50;
+            accumulator[j] *= this.freqData[j*i] / 50;
         }
     }
+    return accumulator;
+}
+
+
+SP.Analyser.prototype.getAction = function(spectrum) {
+
+    var m = spectrum.length;
 
     var max = 0;
     var avg = 0;
     for (var j = 0; j < m; j++) {
-        var v = accumulator[j];
+        var v = spectrum[j];
         avg += v;
-        if (accumulator[j] > accumulator[max]) {
+        if (spectrum[j] > spectrum[max]) {
             max = j;
         }
-        plotData.push([j, accumulator[j]]);        
     }
     avg /= m;
+    
 
-
-    if (accumulator[max] - avg > 50) {
+    if (spectrum[max] - avg > 50) {
         if (max > 15) {
-			game.moveUp();
-			// $('#spaceship').stop();
-            // $('#spaceship').animate({'margin-left': 800});
+	    return 'up';
         } else {
-			game.moveDown();
-			// $('#spaceship').stop();
-            // $('#spaceship').animate({'margin-left': 0});
+            return 'down';
         }
     } else {
-        //$('#spaceship').stop();
-		game.stop();
+        return 'stop';
+    }
+}
+
+
+SP.Analyser.prototype.initializeMicrophone = function (stream) {
+    this.mediaSource = this.ac.createMediaStreamSource(stream);
+    this.mediaSource.connect(this.analyserInput);
+    requestAnimationFrame(this.mainLoop.bind(this));
+}
+
+
+SP.Analyser.prototype.mainLoop = function () {
+    var spectrum = this.getHPSpectrum();
+//    game.updateFrequencySpectrum(spectrum);
+    var action = this.getAction(spectrum);
+    var game = this.game;
+    switch (action) {
+    case 'up':
+        game.moveUp();
+        break;
+    case 'down':
+        game.moveDown();
+        break;
+    default:
+        game.stop();
     }
     
-    var options = {
-        yaxis: {
-            max: 300
-        },
-        xaxis: {
-            max: freqData.length/30
-        }
-    }
-    
-
-    //$.plot($("#frequencySpectrum"), [plotData], options);
-    return max;
+    requestAnimationFrame(this.mainLoop.bind(this));
 }
 
-
-var ac = getAudioContext();
-var analyser = ac.createAnalyser();
-
-var analyserInput = ac.createGainNode();
-var lp = ac.createBiquadFilter();
-var hp = ac.createBiquadFilter();
-
-
-lp.type = lp.LOWPASS;
-hp.type = hp.HIGHPASS;
-
-lp.frequency.value = 2000;
-hp.frequency.value = 100;
-
-lp.connect(hp);
-hp.connect(analyser);
-analyserInput.connect(lp);
-
-
-var fileAudio = new Audio('audio/scale.wav');
-var mediaSource;
-
-var freqData = new Uint8Array(analyser.frequencyBinCount);
-
-function initializeAudioFile() {
-    mediaSource = ac.createMediaElementSource(fileAudio);
-    mediaSource.connect(analyserInput);
-    fileAudio.play();
-}
-
-
-function initializeMicrophone(stream) {
-    mediaSource = ac.createMediaStreamSource(stream);
-    mediaSource.connect(analyserInput);
-    requestAnimationFrame(mainLoop);
-}
-
-setTimeout(function() {
-    navigator.getUserMedia( {audio: true}, initializeMicrophone, function(err) { console.log(err); });
-}, 100);
-
-
-function mainLoop() {
-    var freq = getCurrentFrequency();
-    
-    
-    requestAnimationFrame(mainLoop);
-}
-
-/*setTimeout(function () {
-    initializeAudioFile();
-}, 100);*/
-
-//setInterval(update, 100);
 
 
 
